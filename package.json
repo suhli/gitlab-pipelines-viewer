@@ -1,6 +1,7 @@
 {
   "name": "gitlab-pipelines-viewer",
   "displayName": "gitlab-pipelines-viewer",
+  "icon": "media/icon.png",
   "description": "",
   "version": "0.0.3",
   "license": "MIT",

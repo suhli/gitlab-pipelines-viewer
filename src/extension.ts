@@ -19,15 +19,23 @@ function getJobLogHtml(message: string, bodyHtml: string): string {
 <head>
   <meta charset="UTF-8" />
   <style>
-    body {
+    html, body {
       margin: 0;
       padding: 0;
+      height: 100%;
       background-color: #1e1e1e;
       color: #cccccc;
       font-family: Consolas, "Courier New", monospace;
       font-size: 12px;
+      overflow: hidden; /* 外层不滚动 */
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
     }
     .toolbar {
+      flex: 0 0 auto;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -55,29 +63,45 @@ function getJobLogHtml(message: string, bodyHtml: string): string {
       margin-left: 2px;
       font-size: 11px;
     }
+    .message-container {
+      flex: 0 0 auto;
+    }
     .message {
       margin: 4px 8px;
       color: #ffcc00;
     }
+    .log-container {
+      flex: 1 1 auto;
+      overflow: auto;        /* 只让 log 区域滚动 */
+      padding: 4px 8px 8px;
+    }
     pre {
-      margin: 4px 8px 8px;
+      margin: 0;
       white-space: pre-wrap;
       word-break: break-word;
     }
   </style>
 </head>
 <body>
-  <div class="toolbar">
-    <div class="toolbar-left">
-      Job log
+  <div class="container">
+    <div class="toolbar">
+      <div class="toolbar-left">
+        Job log
+      </div>
+      <div class="toolbar-right">
+        <button id="btnRefresh" title="Refresh log">⟳<span>Refresh</span></button>
+        <button id="btnOpenBrowser" title="Open in browser">↗<span>Browser</span></button>
+      </div>
     </div>
-    <div class="toolbar-right">
-      <button id="btnRefresh" title="Refresh log">⟳<span>Refresh</span></button>
-      <button id="btnOpenBrowser" title="Open in browser">↗<span>Browser</span></button>
+
+    <div class="message-container">
+      ${infoBlock}
+    </div>
+
+    <div class="log-container">
+      <pre id="log-root">${bodyHtml}</pre>
     </div>
   </div>
-  ${infoBlock}
-  <pre id="log-root">${bodyHtml}</pre>
 
   <script>
     const vscode = acquireVsCodeApi();
@@ -415,7 +439,18 @@ export function activate(context: vscode.ExtensionContext) {
 
         panel.webview.onDidReceiveMessage(async (msg) => {
           if (msg?.type === "refresh") {
-            await fetchAndRender();
+            await vscode.window.withProgress(
+              {
+                location: vscode.ProgressLocation.Notification,
+                title: `Refreshing job #${job.id}…`,
+                cancellable: false,
+              },
+              async () => {
+                await fetchAndRender(); // 你原来的刷新逻辑
+              }
+            );
+
+            // await fetchAndRender();
           } else if (msg?.type === "openInBrowser") {
             // 直接打开 GitLab 的 job 页
             vscode.env.openExternal(vscode.Uri.parse(job.web_url));
@@ -423,7 +458,16 @@ export function activate(context: vscode.ExtensionContext) {
         });
 
         // 先拉一次
-        await fetchAndRender();
+        await vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: `Refreshing job #${job.id}…`,
+            cancellable: false,
+          },
+          async () => {
+            await fetchAndRender(); // 你原来的刷新逻辑
+          }
+        );
 
         // 只有“非终结状态”的 job 才开启自动刷新
         if (!FINISHED_STATUSES.has(currentStatus)) {

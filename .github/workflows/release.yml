@@ -75,7 +75,14 @@ jobs:
 
       - name: List generated files
         run: ls -al
-
+      - name: Publish to VSCode Marketplace
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          npx @vscode/vsce publish \
+            --packagePath "gitlab-pipelines-viewer-${VERSION}.vsix" \
+            --no-dependencies \
+            -p "$VSCE_PAT"
       - name: Create GitHub Release and upload VSIX
         uses: softprops/action-gh-release@v2
         with:

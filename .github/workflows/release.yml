@@ -25,7 +25,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: "pnpm"
 
       - name: Enable corepack (for pnpm)
         run: corepack enable
@@ -63,7 +62,6 @@ jobs:
       - name: Create tag
         run: |
           TAG="v${VERSION}"
-          # 如果 tag 已经存在则失败（你可以自己改成跳过）
           git tag "$TAG"
 
       - name: Push commit and tag

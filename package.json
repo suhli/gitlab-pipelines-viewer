@@ -1,0 +1,133 @@
+{
+  "name": "gitlab-pipelines-viewer",
+  "displayName": "gitlab-pipelines-viewer",
+  "description": "",
+  "version": "0.0.2",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shuhangli/gitlab-pipelines-viewer.git"
+  },
+  "engines": {
+    "vscode": "^1.106.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:gitlabPipelinesView",
+    "onCommand:gitlabPipelines.refresh"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "id": "gitlabPipelinesView",
+          "name": "GitLab Pipelines"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "gitlabPipelines.refresh",
+          "when": "view == gitlabPipelinesView",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "gitlabPipelines.retryJob",
+          "when": "view == gitlabPipelinesView && viewItem == gitlabJobFinished",
+          "group": "inline"
+        },
+        {
+          "command": "gitlabPipelines.cancelJob",
+          "when": "view == gitlabPipelinesView && viewItem == gitlabJobRunning",
+          "group": "inline"
+        },
+        {
+          "command": "gitlabPipelines.retryPipeline",
+          "when": "view == gitlabPipelinesView && viewItem == gitlabPipelineFinished",
+          "group": "inline"
+        },
+        {
+          "command": "gitlabPipelines.cancelPipeline",
+          "when": "view == gitlabPipelinesView && viewItem == gitlabPipelineRunning",
+          "group": "inline"
+        }
+      ]
+    },
+    "configuration": {
+      "type": "object",
+      "title": "GitLab Pipelines Viewer",
+      "properties": {
+        "gitlabPipelines.gitlabBaseUrl": {
+          "type": "string",
+          "default": "https://gitlab.com",
+          "description": "GitLab base URL, e.g. https://gitlab.com"
+        },
+        "gitlabPipelines.personalAccessToken": {
+          "type": "string",
+          "default": "",
+          "description": "GitLab Personal Access Token with api/read_api permissions"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "gitlabPipelines.refresh",
+        "title": "GitLab Pipelines: Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "gitlabPipelines.showJobLog",
+        "title": "GitLab Pipelines: Show Job Log",
+        "icon": "$(log)"
+      },
+      {
+        "command": "gitlabPipelines.retryJob",
+        "title": "GitLab Pipelines: Retry Job",
+        "icon": "$(debug-restart)"
+      },
+      {
+        "command": "gitlabPipelines.cancelJob",
+        "title": "GitLab Pipelines: Cancel Job",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "gitlabPipelines.retryPipeline",
+        "title": "GitLab Pipelines: Retry Pipeline",
+        "icon": "$(debug-restart)"
+      },
+      {
+        "command": "gitlabPipelines.cancelPipeline",
+        "title": "GitLab Pipelines: Cancel Pipeline",
+        "icon": "$(debug-stop)"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "node esbuild.js",
+    "bundle": "node esbuild.js ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --minify",
+    "package": "pnpm bundle && vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/vscode": "^1.106.1",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.7.1",
+    "esbuild": "^0.27.0",
+    "eslint": "^9.39.1",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.3"
+  },
+  "dependencies": {
+    "ansi-to-html": "^0.7.2",
+    "axios": "^1.13.2"
+  }
+}

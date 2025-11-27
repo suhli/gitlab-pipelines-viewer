@@ -1,0 +1,88 @@
+name: Release VSCode Extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 0.0.3)"
+        required: true
+        type: string
+
+permissions:
+  contents: write # 需要写权限用来 push / 创建 release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 需要完整历史来打 tag 和 push
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Enable corepack (for pnpm)
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set VERSION env
+        id: version
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          echo "VERSION=$VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Update package.json version
+        run: |
+          node -e "const fs=require('fs');
+          const f='package.json';
+          const pkg=JSON.parse(fs.readFileSync(f,'utf8'));
+          pkg.version=process.env.VERSION;
+          fs.writeFileSync(f, JSON.stringify(pkg,null,2)+'\n');"
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add package.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore: release v${VERSION}"
+          fi
+
+      - name: Create tag
+        run: |
+          TAG="v${VERSION}"
+          # 如果 tag 已经存在则失败（你可以自己改成跳过）
+          git tag "$TAG"
+
+      - name: Push commit and tag
+        run: |
+          TAG="v${VERSION}"
+          git push origin HEAD
+          git push origin "$TAG"
+
+      - name: Build VSIX
+        run: pnpm package
+
+      - name: List generated files
+        run: ls -al
+
+      - name: Create GitHub Release and upload VSIX
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: v${{ env.VERSION }}
+          files: gitlab-pipelines-viewer-${{ env.VERSION }}.vsix
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

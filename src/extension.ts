@@ -105,6 +105,19 @@ function getJobLogHtml(message: string, bodyHtml: string): string {
 
   <script>
     const vscode = acquireVsCodeApi();
+    const logContainer = document.querySelector('.log-container');
+    function scrollToBottom() {
+      if (!logContainer) return;
+      // 用 requestAnimationFrame 确保 DOM 布局完成后再滚
+      requestAnimationFrame(() => {
+        logContainer.scrollTop = logContainer.scrollHeight;
+      });
+    }
+
+    // 打开页面时自动滚到最底
+    window.addEventListener('load', () => {
+      scrollToBottom();
+    });
 
     document.getElementById('btnRefresh')?.addEventListener('click', () => {
       vscode.postMessage({ type: 'refresh' });

@@ -22,14 +22,15 @@ export interface GitLabJob {
   finished_at?: string;
 }
 
+// 使用 1.105 及更早版本就存在的主题色，兼容 Cursor (基于 VSCode 1.105.x)
 function getStatusIcon(status: string): vscode.ThemeIcon {
   const s = status.toLowerCase();
 
-  // success = 绿色
+  // success = 绿色 (terminal.ansiGreen 在旧版中已存在)
   if (s === "success") {
     return new vscode.ThemeIcon(
       "circle-filled",
-      new vscode.ThemeColor("charts.green") // VSCode 内置绿色
+      new vscode.ThemeColor("terminal.ansiGreen")
     );
   }
 
@@ -37,7 +38,7 @@ function getStatusIcon(status: string): vscode.ThemeIcon {
   if (s === "failed") {
     return new vscode.ThemeIcon(
       "circle-filled",
-      new vscode.ThemeColor("charts.red")
+      new vscode.ThemeColor("errorForeground")
     );
   }
 
@@ -45,7 +46,7 @@ function getStatusIcon(status: string): vscode.ThemeIcon {
   if (s === "running") {
     return new vscode.ThemeIcon(
       "circle-filled",
-      new vscode.ThemeColor("charts.blue")
+      new vscode.ThemeColor("terminal.ansiBlue")
     );
   }
 
@@ -53,7 +54,7 @@ function getStatusIcon(status: string): vscode.ThemeIcon {
   if (s === "pending") {
     return new vscode.ThemeIcon(
       "circle-filled",
-      new vscode.ThemeColor("charts.yellow")
+      new vscode.ThemeColor("terminal.ansiYellow")
     );
   }
 
@@ -61,7 +62,7 @@ function getStatusIcon(status: string): vscode.ThemeIcon {
   if (s === "cancel" || s === "canceled" || s === "skipped") {
     return new vscode.ThemeIcon(
       "circle-filled",
-      new vscode.ThemeColor("disabledForeground") // 比较灰
+      new vscode.ThemeColor("disabledForeground")
     );
   }
 

@@ -83,6 +83,15 @@ jobs:
             --packagePath "gitlab-pipelines-viewer-${VERSION}.vsix" \
             --no-dependencies \
             -p "$VSCE_PAT"
+
+      - name: Publish to Open VSX Registry
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          npx ovsx publish \
+            --packagePath "gitlab-pipelines-viewer-${VERSION}.vsix" \
+            -p "$OVSX_PAT"
+
       - name: Create GitHub Release and upload VSIX
         uses: softprops/action-gh-release@v2
         with:

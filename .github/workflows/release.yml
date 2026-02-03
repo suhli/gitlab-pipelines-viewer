@@ -30,7 +30,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: "pnpm" # 缓存 pnpm 依赖，加速后续运行
 
       - name: Enable corepack (for pnpm)
         run: corepack enable

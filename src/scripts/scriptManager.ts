@@ -5,13 +5,13 @@ import * as fs from "fs";
 const SCRIPTS_DIR_NAME = "user-scripts";
 const GLOBAL_DIR_NAME = "global";
 
-/** 脚本导出接口：用户脚本需 export run，可选 export confirmPrompt / inputPrompt */
+/** Script export interface: user script must export run; optional confirmPrompt / inputPrompt */
 export interface UserScriptExports {
-  /** 执行入口，ctx 包含 vscode、工作区路径、确认结果、输入值等 */
+  /** Entry point; ctx includes vscode, workspace path, confirm result, input values, etc. */
   run: (ctx: ScriptRunContext) => void | Promise<void>;
-  /** 可选：执行前二次确认的提示文案 */
+  /** Optional: confirmation prompt text before execution */
   confirmPrompt?: string;
-  /** 可选：执行前需要用户输入的项，单条或数组 */
+  /** Optional: input prompt(s) before execution, single or array */
   inputPrompt?:
     | { prompt: string; default?: string; password?: boolean }
     | Array<{ prompt: string; default?: string; password?: boolean }>;
@@ -23,9 +23,9 @@ export interface ScriptRunContext {
   workspaceName: string | undefined;
   scriptPath: string;
   scope: "global" | "project";
-  /** 若存在 confirmPrompt，用户点击确定后为 true */
+  /** If confirmPrompt exists, true after user clicks OK */
   confirmResult?: boolean;
-  /** 若存在 inputPrompt，按顺序对应的用户输入值 */
+  /** If inputPrompt exists, user input values in order */
   inputValues?: string[];
 }
 
@@ -47,7 +47,7 @@ function getAppDataRoot(): string {
   return path.join(home, ".config");
 }
 
-/** 脚本根目录：AppData/gitlab-pipelines-viewer/user-scripts */
+/** Scripts root: AppData/gitlab-pipelines-viewer/user-scripts */
 export function getScriptsRoot(): string {
   return path.join(getAppDataRoot(), "gitlab-pipelines-viewer", SCRIPTS_DIR_NAME);
 }
@@ -60,7 +60,7 @@ function sanitizeProjectName(name: string): string {
   return name.replace(/[\\/:*?"<>|]/g, "_").trim() || "default";
 }
 
-/** 当前工作区对应的项目脚本目录名（未打开文件夹则返回 undefined） */
+/** Project scripts dir for current workspace (undefined if no folder open) */
 export function getProjectScriptsDir(): string | undefined {
   const folder = vscode.workspace.workspaceFolders?.[0];
   if (!folder) return undefined;
@@ -74,11 +74,11 @@ function ensureDir(dir: string): void {
   }
 }
 
-/** 列举全局脚本目录下的 .js 文件 */
+/** List .js files in the given scripts directory */
 function listScriptsInDir(dir: string, scope: "global" | "project"): ScriptItem[] {
   const items: ScriptItem[] = [];
   if (!fs.existsSync(dir)) return items;
-  const scopeLabel = scope === "global" ? "全局" : "项目";
+  const scopeLabel = scope === "global" ? "Global" : "Project";
   try {
     const files = fs.readdirSync(dir);
     for (const f of files) {
@@ -86,7 +86,7 @@ function listScriptsInDir(dir: string, scope: "global" | "project"): ScriptItem[
         const name = path.basename(f, ".js");
         items.push({
           label: name,
-          description: `${scopeLabel}脚本 · ${path.join(dir, f)}`,
+          description: `${scopeLabel} script · ${path.join(dir, f)}`,
           path: path.join(dir, f),
           scope,
         });
@@ -98,7 +98,7 @@ function listScriptsInDir(dir: string, scope: "global" | "project"): ScriptItem[
   return items;
 }
 
-/** 列举所有可用脚本：先全局，再项目 */
+/** List all available scripts: global first, then project */
 export function listAllScripts(): ScriptItem[] {
   const globalDir = getGlobalScriptsDir();
   const projectDir = getProjectScriptsDir();
@@ -107,14 +107,14 @@ export function listAllScripts(): ScriptItem[] {
   return [...globalItems, ...projectItems];
 }
 
-/** 创建脚本文件所在目录并写入默认内容，返回创建的文件路径 */
+/** Create script directory if needed and write default content; return created file path */
 export async function createScript(
   scope: "global" | "project",
   scriptName: string
 ): Promise<string> {
   const sanitized = scriptName.replace(/[\\/:*?"<>|]/g, "_").trim();
   if (!sanitized) {
-    throw new Error("脚本名不能为空");
+    throw new Error("Script name cannot be empty");
   }
   const fileName = sanitized.endsWith(".js") ? sanitized : `${sanitized}.js`;
   let dir: string;
@@ -123,14 +123,14 @@ export async function createScript(
   } else {
     const projectDir = getProjectScriptsDir();
     if (!projectDir) {
-      throw new Error("请先打开一个工作区文件夹以创建项目级脚本");
+      throw new Error("Please open a workspace folder first to create a project-level script");
     }
     dir = projectDir;
   }
   ensureDir(dir);
   const filePath = path.join(dir, fileName);
   if (fs.existsSync(filePath)) {
-    throw new Error(`脚本已存在: ${filePath}`);
+    throw new Error(`Script already exists: ${filePath}`);
   }
   const template = getDefaultScriptTemplate();
   fs.writeFileSync(filePath, template, "utf8");
@@ -139,29 +139,29 @@ export async function createScript(
 
 function getDefaultScriptTemplate(): string {
   return `/**
- * 自定义脚本 - 可通过 Ctrl+Shift+P -> "GitLab Pipelines: Run custom script" 运行
+ * Custom script - run via Ctrl+Shift+P -> "GitLab Pipelines: Run custom script"
  *
- * 可选导出：
- * - confirmPrompt: string  执行前弹出确认框的文案
- * - inputPrompt: { prompt, default?, password? } 或 数组  执行前弹出输入框
- * - run(ctx): 主逻辑
+ * Optional exports:
+ * - confirmPrompt: string  Confirmation dialog text before execution
+ * - inputPrompt: { prompt, default?, password? } or array  Input dialog(s) before execution
+ * - run(ctx): main logic
  *   ctx.vscode, ctx.workspaceRoot, ctx.workspaceName, ctx.scriptPath, ctx.scope
- *   ctx.confirmResult, ctx.inputValues (若配置了 confirm/input)
+ *   ctx.confirmResult, ctx.inputValues (if confirm/input are used)
  */
 module.exports = {
-  // 示例：执行前二次确认
-  // confirmPrompt: '确定要执行此操作吗？',
-  // 示例：执行前要求输入
-  // inputPrompt: { prompt: '请输入分支名', default: 'main' },
+  // Example: confirm before execution
+  // confirmPrompt: 'Are you sure you want to run this?',
+  // Example: prompt for input
+  // inputPrompt: { prompt: 'Enter branch name', default: 'main' },
   run: async (ctx) => {
     const vscode = ctx.vscode;
-    await vscode.window.showInformationMessage('脚本已运行: ' + ctx.scriptPath);
+    await vscode.window.showInformationMessage('Script ran: ' + ctx.scriptPath);
   },
 };
 `;
 }
 
-/** 执行用户脚本：加载、确认/输入、再执行 run */
+/** Run user script: load, confirm/input if needed, then run */
 export async function runScript(
   scriptPath: string,
   scope: "global" | "project"
@@ -185,12 +185,12 @@ export async function runScript(
     mod = require(fullPath) as UserScriptExports;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    await vscode.window.showErrorMessage(`加载脚本失败: ${msg}`);
+    await vscode.window.showErrorMessage(`Failed to load script: ${msg}`);
     return;
   }
 
   if (typeof mod.run !== "function") {
-    await vscode.window.showErrorMessage("脚本未导出 run 函数");
+    await vscode.window.showErrorMessage("Script does not export a run function");
     return;
   }
 
@@ -198,10 +198,10 @@ export async function runScript(
     const choice = await vscode.window.showWarningMessage(
       mod.confirmPrompt,
       { modal: true },
-      "确定",
-      "取消"
+      "OK",
+      "Cancel"
     );
-    if (choice !== "确定") return;
+    if (choice !== "OK") return;
     ctx.confirmResult = true;
   }
 
@@ -215,7 +215,7 @@ export async function runScript(
         value: item.default,
         password: item.password,
       });
-      if (value === undefined) return; // 用户取消
+      if (value === undefined) return; // user cancelled
       inputValues.push(value);
     }
     ctx.inputValues = inputValues;
@@ -225,6 +225,6 @@ export async function runScript(
     await Promise.resolve(mod.run(ctx));
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    await vscode.window.showErrorMessage(`脚本执行失败: ${msg}`);
+    await vscode.window.showErrorMessage(`Script execution failed: ${msg}`);
   }
 }

@@ -1,5 +1,9 @@
 # GitLab Pipelines Viewer
 
+[中文](README_CN.md) | **English**
+
+---
+
 A lightweight, fast, no-bloat VS Code extension for viewing and managing GitLab CI pipelines **directly inside the Explorer sidebar**.
 
 This extension is designed for teams who want:
@@ -58,6 +62,14 @@ Get VS Code notifications when:
 
 All notification logic is local to the extension — no remote services needed.
 
+### 📌 Custom Scripts
+- **Custom Scripts** view in the Explorer sidebar lists your Node.js scripts
+- **Global scripts**: stored under `AppData/gitlab-pipelines-viewer/user-scripts/global` (all workspaces)
+- **Project scripts**: per-workspace under `user-scripts/<workspace-name>`
+- Commands: **New Global Node.js Script**, **New Project Node.js Script**, **Run custom script**
+- Scripts export `run(ctx)`; optional `confirmPrompt` and `inputPrompt` for confirmation/input before execution
+- Run from Command Palette (`Ctrl+Shift+P` → “GitLab Pipelines: Run custom script”) or from the script tree (Run Script)
+
 ---
 
 ## 🔧 Requirements
@@ -100,25 +112,23 @@ Your GitLab Personal Access Token (API enabled).
 
 ---
 
-## 🖥 Screenshots
-
-> _(Insert your own screenshots later)_  
-> - Pipelines panel  
-> - Jobs list  
-> - Job log webview  
-> - Notifications  
-
----
-
 ## 🏗 Development
 
 The extension uses:
 - **TypeScript**
-- **esbuild** (fast bundling)
+- **esbuild** (bundling, output: `dist/extension.js`)
 - **pnpm**
-- **axios**
-- **ansi-to-html**
+- **axios** (GitLab API)
+- **ansi-to-html** (job log coloring)
 
-### Install deps
+### Install and build
 ```bash
 pnpm install
+pnpm run compile
+```
+
+### Package (vsce)
+```bash
+pnpm run package
+```
+Produces a `.vsix` in the project root (no external dependencies bundled).

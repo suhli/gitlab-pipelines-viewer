@@ -1,10 +1,10 @@
 import * as vscode from "vscode";
 import { listAllScripts, type ScriptItem } from "./scriptManager";
 
-const GLOBAL_LABEL = "全局脚本";
-const PROJECT_LABEL = "项目脚本";
+const GLOBAL_LABEL = "Global Scripts";
+const PROJECT_LABEL = "Project Scripts";
 
-/** 树节点：分组（全局/项目）或单个脚本 */
+/** Tree node: group (global/project) or single script */
 export type ScriptsTreeNode = ScriptFolderNode | ScriptFileNode;
 
 export class ScriptFolderNode {
@@ -50,7 +50,7 @@ export class ScriptsTreeDataProvider
       fileNode.label,
       vscode.TreeItemCollapsibleState.None
     );
-    item.description = fileNode.script.scope === "global" ? "全局" : "项目";
+    item.description = fileNode.script.scope === "global" ? "Global" : "Project";
     item.resourceUri = vscode.Uri.file(fileNode.script.path);
     item.contextValue = "script";
     item.command = {

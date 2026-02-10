@@ -33,7 +33,7 @@ function getJobLogHtml(message: string, bodyHtml: string): string {
       color: #cccccc;
       font-family: Consolas, "Courier New", monospace;
       font-size: 12px;
-      overflow: hidden; /* 外层不滚动 */
+      overflow: hidden; /* outer no scroll */
     }
     .container {
       display: flex;
@@ -78,7 +78,7 @@ function getJobLogHtml(message: string, bodyHtml: string): string {
     }
     .log-container {
       flex: 1 1 auto;
-      overflow: auto;        /* 只让 log 区域滚动 */
+      overflow: auto;        /* only log area scrolls */
       padding: 4px 8px 8px;
     }
     pre {
@@ -114,13 +114,13 @@ function getJobLogHtml(message: string, bodyHtml: string): string {
     const logContainer = document.querySelector('.log-container');
     function scrollToBottom() {
       if (!logContainer) return;
-      // 用 requestAnimationFrame 确保 DOM 布局完成后再滚
+      // use requestAnimationFrame so scroll happens after layout
       requestAnimationFrame(() => {
         logContainer.scrollTop = logContainer.scrollHeight;
       });
     }
 
-    // 打开页面时自动滚到最底
+    // auto scroll to bottom on load
     window.addEventListener('load', () => {
       scrollToBottom();
     });
@@ -153,7 +153,7 @@ export function activate(context: vscode.ExtensionContext) {
   );
   context.subscriptions.push(provider, treeView);
 
-  // ====== 已加载脚本面板 ======
+  // ====== Scripts panel ======
   const scriptsProvider = new ScriptsTreeDataProvider();
   const scriptsTreeView = vscode.window.createTreeView("gitlabPipelinesScriptsView", {
     treeDataProvider: scriptsProvider,
@@ -182,29 +182,29 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
 
-  // ====== 用户自定义脚本：新建全局 / 项目级脚本 ======
+  // ====== Custom scripts: new global / project script ======
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "gitlabPipelines.createGlobalScript",
       async () => {
         const name = await vscode.window.showInputBox({
-          prompt: "输入全局脚本名称（将创建 name.js）",
+          prompt: "Enter global script name (will create name.js)",
           placeHolder: "my-script",
           validateInput: (v) =>
-            !v?.trim() ? "脚本名不能为空" : /[\\/:*?"<>|]/.test(v) ? "不能包含 \\ / : * ? \" < > |" : null,
+            !v?.trim() ? "Script name cannot be empty" : /[\\/:*?"<>|]/.test(v) ? "Cannot contain \\ / : * ? \" < > |" : null,
         });
         if (!name?.trim()) return;
         try {
           const filePath = await createScript("global", name.trim());
           scriptsProvider.refresh();
           await vscode.window.showInformationMessage(
-            `已创建全局脚本: ${filePath}`
+            `Created global script: ${filePath}`
           );
           const doc = await vscode.workspace.openTextDocument(filePath);
           await vscode.window.showTextDocument(doc);
         } catch (e: unknown) {
           const msg = e instanceof Error ? e.message : String(e);
-          await vscode.window.showErrorMessage(`创建失败: ${msg}`);
+          await vscode.window.showErrorMessage(`Creation failed: ${msg}`);
         }
       }
     )
@@ -215,28 +215,28 @@ export function activate(context: vscode.ExtensionContext) {
       async () => {
         if (!vscode.workspace.workspaceFolders?.length) {
           await vscode.window.showWarningMessage(
-            "请先打开一个工作区文件夹再创建项目级脚本"
+            "Please open a workspace folder first to create a project-level script"
           );
           return;
         }
         const name = await vscode.window.showInputBox({
-          prompt: "输入项目级脚本名称（将创建 name.js）",
+          prompt: "Enter project-level script name (will create name.js)",
           placeHolder: "my-script",
           validateInput: (v) =>
-            !v?.trim() ? "脚本名不能为空" : /[\\/:*?"<>|]/.test(v) ? "不能包含 \\ / : * ? \" < > |" : null,
+            !v?.trim() ? "Script name cannot be empty" : /[\\/:*?"<>|]/.test(v) ? "Cannot contain \\ / : * ? \" < > |" : null,
         });
         if (!name?.trim()) return;
         try {
           const filePath = await createScript("project", name.trim());
           scriptsProvider.refresh();
           await vscode.window.showInformationMessage(
-            `已创建项目级脚本: ${filePath}`
+            `Created project-level script: ${filePath}`
           );
           const doc = await vscode.workspace.openTextDocument(filePath);
           await vscode.window.showTextDocument(doc);
         } catch (e: unknown) {
           const msg = e instanceof Error ? e.message : String(e);
-          await vscode.window.showErrorMessage(`创建失败: ${msg}`);
+          await vscode.window.showErrorMessage(`Creation failed: ${msg}`);
         }
       }
     )
@@ -248,13 +248,13 @@ export function activate(context: vscode.ExtensionContext) {
         const scripts = listAllScripts();
         if (scripts.length === 0) {
           await vscode.window.showInformationMessage(
-            "暂无自定义脚本。请先用「新建全局 Node.js 脚本」或「新建项目级 Node.js 脚本」创建。"
+            "No custom scripts yet. Create one via 'GitLab Pipelines: New Global Node.js Script' or 'GitLab Pipelines: New Project Node.js Script'."
           );
           return;
         }
         const picked = await vscode.window.showQuickPick(scripts, {
           matchOnDescription: true,
-          placeHolder: "选择要运行的脚本",
+          placeHolder: "Select a script to run",
         });
         if (!picked) return;
         await runScript(picked.path, picked.scope);
@@ -290,7 +290,7 @@ export function activate(context: vscode.ExtensionContext) {
         const { baseUrl, token, projectId } = provider.getGitLabConfig();
         if (!baseUrl || !token) {
           vscode.window.showWarningMessage(
-            "gitlabPipelines.gitlabBaseUrl / personalAccessToken 未配置"
+            "gitlabPipelines.gitlabBaseUrl / personalAccessToken not configured"
           );
           return;
         }
@@ -339,7 +339,7 @@ export function activate(context: vscode.ExtensionContext) {
         const { baseUrl, token, projectId } = provider.getGitLabConfig();
         if (!baseUrl || !token) {
           vscode.window.showWarningMessage(
-            "gitlabPipelines.gitlabBaseUrl / personalAccessToken 未配置"
+            "gitlabPipelines.gitlabBaseUrl / personalAccessToken not configured"
           );
           return;
         }
@@ -388,7 +388,7 @@ export function activate(context: vscode.ExtensionContext) {
         const { baseUrl, token, projectId } = provider.getGitLabConfig();
         if (!baseUrl || !token) {
           vscode.window.showWarningMessage(
-            "gitlabPipelines.gitlabBaseUrl / personalAccessToken 未配置"
+            "gitlabPipelines.gitlabBaseUrl / personalAccessToken not configured"
           );
           return;
         }
@@ -437,7 +437,7 @@ export function activate(context: vscode.ExtensionContext) {
         const { baseUrl, token, projectId } = provider.getGitLabConfig();
         if (!baseUrl || !token) {
           vscode.window.showWarningMessage(
-            "gitlabPipelines.gitlabBaseUrl / personalAccessToken 未配置"
+            "gitlabPipelines.gitlabBaseUrl / personalAccessToken not configured"
           );
           return;
         }
@@ -489,7 +489,7 @@ export function activate(context: vscode.ExtensionContext) {
         const { baseUrl, token, projectId } = provider.getGitLabConfig();
         if (!baseUrl || !token) {
           vscode.window.showWarningMessage(
-            "gitlabPipelines.gitlabBaseUrl / personalAccessToken 未配置"
+            "gitlabPipelines.gitlabBaseUrl / personalAccessToken not configured"
           );
           return;
         }

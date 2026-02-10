@@ -133,12 +133,12 @@
       },
       {
         "command": "gitlabPipelines.createGlobalScript",
-        "title": "GitLab Pipelines: 新建全局 Node.js 脚本",
+        "title": "GitLab Pipelines: New Global Node.js Script",
         "icon": "$(file-add)"
       },
       {
         "command": "gitlabPipelines.createProjectScript",
-        "title": "GitLab Pipelines: 新建项目级 Node.js 脚本",
+        "title": "GitLab Pipelines: New Project Node.js Script",
         "icon": "$(file-add)"
       },
       {

@@ -18,7 +18,11 @@
   ],
   "activationEvents": [
     "onView:gitlabPipelinesView",
-    "onCommand:gitlabPipelines.refresh"
+    "onView:gitlabPipelinesScriptsView",
+    "onCommand:gitlabPipelines.refresh",
+    "onCommand:gitlabPipelines.createGlobalScript",
+    "onCommand:gitlabPipelines.createProjectScript",
+    "onCommand:gitlabPipelines.runCustomScript"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -27,6 +31,10 @@
         {
           "id": "gitlabPipelinesView",
           "name": "GitLab Pipelines"
+        },
+        {
+          "id": "gitlabPipelinesScriptsView",
+          "name": "Custom Scripts"
         }
       ]
     },
@@ -35,6 +43,11 @@
         {
           "command": "gitlabPipelines.refresh",
           "when": "view == gitlabPipelinesView",
+          "group": "navigation"
+        },
+        {
+          "command": "gitlabPipelines.refreshScripts",
+          "when": "view == gitlabPipelinesScriptsView",
           "group": "navigation"
         }
       ],
@@ -57,6 +70,16 @@
         {
           "command": "gitlabPipelines.cancelPipeline",
           "when": "view == gitlabPipelinesView && viewItem == gitlabPipelineRunning",
+          "group": "inline"
+        },
+        {
+          "command": "gitlabPipelines.openScript",
+          "when": "view == gitlabPipelinesScriptsView && viewItem == script",
+          "group": "inline"
+        },
+        {
+          "command": "gitlabPipelines.runScriptFromTree",
+          "when": "view == gitlabPipelinesScriptsView && viewItem == script",
           "group": "inline"
         }
       ]
@@ -107,6 +130,35 @@
         "command": "gitlabPipelines.cancelPipeline",
         "title": "GitLab Pipelines: Cancel Pipeline",
         "icon": "$(debug-stop)"
+      },
+      {
+        "command": "gitlabPipelines.createGlobalScript",
+        "title": "GitLab Pipelines: 新建全局 Node.js 脚本",
+        "icon": "$(file-add)"
+      },
+      {
+        "command": "gitlabPipelines.createProjectScript",
+        "title": "GitLab Pipelines: 新建项目级 Node.js 脚本",
+        "icon": "$(file-add)"
+      },
+      {
+        "command": "gitlabPipelines.runCustomScript",
+        "title": "GitLab Pipelines: Run custom script",
+        "icon": "$(play)"
+      },
+      {
+        "command": "gitlabPipelines.refreshScripts",
+        "title": "GitLab Pipelines: Refresh Scripts",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "gitlabPipelines.openScript",
+        "title": "GitLab Pipelines: Open Script in Editor"
+      },
+      {
+        "command": "gitlabPipelines.runScriptFromTree",
+        "title": "GitLab Pipelines: Run Script",
+        "icon": "$(play)"
       }
     ]
   },

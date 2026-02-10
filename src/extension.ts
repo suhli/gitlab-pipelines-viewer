@@ -8,6 +8,12 @@ import {
 import axios from "axios";
 import AnsiToHtml from "ansi-to-html";
 import { FINISHED_STATUSES } from "./constants";
+import {
+  createScript,
+  listAllScripts,
+  runScript,
+} from "./scripts/scriptManager";
+import { ScriptFileNode, ScriptsTreeDataProvider, ScriptsTreeNode } from "./scripts/scriptsTreeProvider";
 const REFRESH_INTERVAL_MS = 10000;
 function getJobLogHtml(message: string, bodyHtml: string): string {
   const infoBlock = message
@@ -146,6 +152,127 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
   context.subscriptions.push(provider, treeView);
+
+  // ====== 已加载脚本面板 ======
+  const scriptsProvider = new ScriptsTreeDataProvider();
+  const scriptsTreeView = vscode.window.createTreeView("gitlabPipelinesScriptsView", {
+    treeDataProvider: scriptsProvider,
+    showCollapseAll: true,
+  });
+  context.subscriptions.push(scriptsProvider, scriptsTreeView);
+  context.subscriptions.push(
+    vscode.commands.registerCommand("gitlabPipelines.refreshScripts", () =>
+      scriptsProvider.refresh()
+    )
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "gitlabPipelines.openScript",
+      async (arg: string | vscode.TreeItem) => {
+        const pathStr =
+          typeof arg === "string"
+            ? arg
+            : (arg as vscode.TreeItem).resourceUri?.fsPath;
+        if (!pathStr) return;
+        const doc = await vscode.workspace.openTextDocument(
+          vscode.Uri.file(pathStr)
+        );
+        await vscode.window.showTextDocument(doc);
+      }
+    )
+  );
+
+  // ====== 用户自定义脚本：新建全局 / 项目级脚本 ======
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "gitlabPipelines.createGlobalScript",
+      async () => {
+        const name = await vscode.window.showInputBox({
+          prompt: "输入全局脚本名称（将创建 name.js）",
+          placeHolder: "my-script",
+          validateInput: (v) =>
+            !v?.trim() ? "脚本名不能为空" : /[\\/:*?"<>|]/.test(v) ? "不能包含 \\ / : * ? \" < > |" : null,
+        });
+        if (!name?.trim()) return;
+        try {
+          const filePath = await createScript("global", name.trim());
+          scriptsProvider.refresh();
+          await vscode.window.showInformationMessage(
+            `已创建全局脚本: ${filePath}`
+          );
+          const doc = await vscode.workspace.openTextDocument(filePath);
+          await vscode.window.showTextDocument(doc);
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : String(e);
+          await vscode.window.showErrorMessage(`创建失败: ${msg}`);
+        }
+      }
+    )
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "gitlabPipelines.createProjectScript",
+      async () => {
+        if (!vscode.workspace.workspaceFolders?.length) {
+          await vscode.window.showWarningMessage(
+            "请先打开一个工作区文件夹再创建项目级脚本"
+          );
+          return;
+        }
+        const name = await vscode.window.showInputBox({
+          prompt: "输入项目级脚本名称（将创建 name.js）",
+          placeHolder: "my-script",
+          validateInput: (v) =>
+            !v?.trim() ? "脚本名不能为空" : /[\\/:*?"<>|]/.test(v) ? "不能包含 \\ / : * ? \" < > |" : null,
+        });
+        if (!name?.trim()) return;
+        try {
+          const filePath = await createScript("project", name.trim());
+          scriptsProvider.refresh();
+          await vscode.window.showInformationMessage(
+            `已创建项目级脚本: ${filePath}`
+          );
+          const doc = await vscode.workspace.openTextDocument(filePath);
+          await vscode.window.showTextDocument(doc);
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : String(e);
+          await vscode.window.showErrorMessage(`创建失败: ${msg}`);
+        }
+      }
+    )
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "gitlabPipelines.runCustomScript",
+      async () => {
+        const scripts = listAllScripts();
+        if (scripts.length === 0) {
+          await vscode.window.showInformationMessage(
+            "暂无自定义脚本。请先用「新建全局 Node.js 脚本」或「新建项目级 Node.js 脚本」创建。"
+          );
+          return;
+        }
+        const picked = await vscode.window.showQuickPick(scripts, {
+          matchOnDescription: true,
+          placeHolder: "选择要运行的脚本",
+        });
+        if (!picked) return;
+        await runScript(picked.path, picked.scope);
+      }
+    )
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "gitlabPipelines.runScriptFromTree",
+      async (arg: ScriptFileNode) => {
+        const scriptPath = arg?.path;
+        if (!scriptPath) return;
+        const scripts = listAllScripts();
+        const found = scripts.find((s) => s.path === scriptPath);
+        if (found) await runScript(found.path, found.scope);
+      }
+    )
+  );
 
   treeView.onDidCollapseElement((e) => {
     const element = e.element;
